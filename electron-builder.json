@@ -1,0 +1,43 @@
+{
+  "appId": "com.budgetmaaser.pro",
+  "productName": "Budget-Maaser-Pro",
+  "electronVersion": "34.2.0",
+  "compression": "store",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "win": {
+    "icon": "electron/icon.ico",
+    "artifactName": "Budget-Maaser-Pro-Win64.${ext}",
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      },
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "portable": {
+    "artifactName": "Budget-Maaser-Pro-Portable.exe"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "כלכלת הבית ומעשרות Pro",
+    "artifactName": "Budget-Maaser-Pro-Setup.exe"
+  }
+}
