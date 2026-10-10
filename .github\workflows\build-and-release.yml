@@ -1,0 +1,95 @@
+name: Build Electron Desktop Suite (Portable, Setup, ZIP & Single-File)
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+      - '*'
+  pull_request:
+    branches:
+      - main
+      - master
+  release:
+    types: [published, created]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-electron-exe:
+    name: Build Fast Electron Desktop .EXE Suite & Single-File HTML
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Project Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Install Electron & Electron-Builder
+        run: npm install --no-save --legacy-peer-deps electron@34.2.0 electron-builder@25.1.8
+
+      - name: Type-Check (TypeScript Lint)
+        run: npm run lint
+
+      - name: Build App, Single-File HTML & Electron Targets (Portable, Setup, ZIP)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run dist:exe
+
+      - name: Verify All Generated Desktop Outputs
+        shell: pwsh
+        run: |
+          $required = @(
+            "release/Budget-Maaser-Pro-Portable.exe",
+            "release/Budget-Maaser-Pro-Setup.exe",
+            "release/Budget-Maaser-Pro-Win64.zip",
+            "release/Budget-Maaser-Pro-SingleFile.html"
+          )
+          foreach ($file in $required) {
+            if (!(Test-Path $file)) {
+              Write-Error "Required build artifact missing: $file"
+              exit 1
+            }
+          }
+          Get-ChildItem release/
+
+      - name: Upload All Desktop Builds & Single-File Artifact on Every Commit
+        uses: actions/upload-artifact@v4
+        with:
+          name: Budget-Maaser-Pro-Desktop-${{ github.sha }}
+          path: |
+            release/Budget-Maaser-Pro-Portable.exe
+            release/Budget-Maaser-Pro-Setup.exe
+            release/Budget-Maaser-Pro-Win64.zip
+            release/Budget-Maaser-Pro-SingleFile.html
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Attach Desktop Suite to GitHub Release (on Tag or Release)
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/Budget-Maaser-Pro-Portable.exe
+            release/Budget-Maaser-Pro-Setup.exe
+            release/Budget-Maaser-Pro-Win64.zip
+            release/Budget-Maaser-Pro-SingleFile.html
+          generate_release_notes: true
+          body: |
+            ### כלכלת הבית ומעשרות Pro — חבילת תוכנה שולחנית מהירה ל-Windows (Electron)
+            - **`Budget-Maaser-Pro-Setup.exe` (מומלץ למהירות מקסימלית)**: מתקין בקליק אחד שיוצר קיצור דרך על שולחן העבודה ונפתח תוך פחות משנייה (ללא פריסה מחדש בכל הפעלה).
+            - **`Budget-Maaser-Pro-Win64.zip` (ללא התקנה + פתיחה מיידית)**: תיקייה מוכנה לחילוץ חד-פעמי — הפעלת `Budget-Maaser-Pro.exe` מתוכה נפתחת בשבריר שנייה.
+            - **`Budget-Maaser-Pro-Portable.exe` (קובץ EXE בודד נייד)**: מואץ עם `compression: store`, מסך פתיחה מיידי (Splash Screen) ומצב המתנה חכם בשורת המשימות (System Tray).
+            - **`Budget-Maaser-Pro-SingleFile.html`**: קובץ HTML יחיד עצמאי (Single-File) לפתיחה בכל דפדפן.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
